@@ -5,10 +5,14 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "webpack --mode production",
+    "build:dev": "webpack --mode development",
     "start": "webpack serve --mode development",
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
+    "gsap": "^3.13.0",
+    "install": "^0.13.0",
+    "npm": "^11.6.3",
     "pixi-spine": "^4.0.4",
     "pixi.js": "^7.3.2"
   },

@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { AssetLoader } from '../utils/AssetLoader';
+import { gsap } from "gsap";
 
 const SYMBOL_TEXTURES = [
     'symbol1.png',
@@ -17,6 +18,7 @@ export class Reel {
     private symbols: PIXI.Sprite[];
     private symbolSize: number;
     private symbolCount: number;
+    private xBoundary: number;
     private speed: number = 0;
     private isSpinning: boolean = false;
 
@@ -25,26 +27,50 @@ export class Reel {
         this.symbols = [];
         this.symbolSize = symbolSize;
         this.symbolCount = symbolCount;
+        this.xBoundary = this.symbolSize * this.symbolCount;
 
         this.createSymbols();
     }
 
     private createSymbols(): void {
-        // Create symbols for the reel, arranged horizontally
+        const boundarySymbol = this.createRandomSymbol();
+        boundarySymbol.x = -this.symbolSize;
+        this.container.addChild(boundarySymbol);
+        this.symbols.push(boundarySymbol);
+
+        for (let i = 0; i < this.symbolCount; i++) {
+            const symbol = this.createRandomSymbol();
+            symbol.x = i * this.symbolSize;
+            this.container.addChild(symbol);
+            this.symbols.push(symbol);
+        }
     }
 
     private createRandomSymbol(): PIXI.Sprite {
+        // TODO:Create a sprite with random texture
+        const sprite = new PIXI.Sprite(this.createRandomSymbolTexture());
+        return sprite;
+    }
+
+    private createRandomSymbolTexture(): PIXI.Texture {
         // TODO:Get a random symbol texture
-
-        // TODO:Create a sprite with the texture
-
-        return new PIXI.Sprite();
+        const textureName = SYMBOL_TEXTURES[Math.floor(Math.random() * SYMBOL_TEXTURES.length)];
+        const texture = AssetLoader.getTexture(textureName);
+        return texture;
     }
 
     public update(delta: number): void {
         if (!this.isSpinning && this.speed === 0) return;
 
         // TODO:Move symbols horizontally
+        for (const symbol of this.symbols) {
+            symbol.x += this.speed * delta;
+            if (symbol.x > this.xBoundary) {
+                symbol.x = -this.symbolSize + (symbol.x - this.xBoundary);
+                const newRandomTexture = this.createRandomSymbolTexture();
+                symbol.texture = newRandomTexture;
+            }
+        }
 
         // If we're stopping, slow down the reel
         if (!this.isSpinning && this.speed > 0) {
@@ -56,11 +82,19 @@ export class Reel {
                 this.snapToGrid();
             }
         }
+
+       
     }
 
     private snapToGrid(): void {
         // TODO: Snap symbols to horizontal grid positions
-
+        this.symbols.forEach(symbol => {
+            const diff = (symbol.x + this.symbolSize) % this.symbolSize;
+            
+            if (diff > 0) {
+                gsap.to(symbol, { x: symbol.x - diff, duration: 0.5 });
+            }
+        });
     }
 
     public startSpin(): void {
