@@ -3,7 +3,7 @@ import 'pixi-spine';
 import { Reel, ReelSpinEvents } from './Reel';
 import { sound } from '../utils/sound';
 import { AssetLoader } from '../utils/AssetLoader';
-import {Spine} from "pixi-spine";
+import { Spine } from "pixi-spine";
 
 const REEL_COUNT = 4;
 const SYMBOLS_PER_REEL = 6;
@@ -89,7 +89,10 @@ export class SlotMachine {
     }
 
     public async spin(): Promise<void> {
-        if (this.isSpinning) return;
+        if (this.isSpinning) {
+            console.warn('Slot machine is already spinning.');
+            return;
+        }
 
         this.isSpinning = true;
 
@@ -105,12 +108,7 @@ export class SlotMachine {
             this.spinButton.interactive = false;
         }
 
-        for (let i = 0; i < this.reels.length; i++) {
-            setTimeout(() => {
-                this.reels[i].startSpin();
-            }, i * 200);
-        }
-
+        // Start all reels with staggered delays
         const spinPromises: Promise<void>[] = [];
         for (let i = 0; i < this.reels.length; i++) {
             spinPromises.push(new Promise((resolve) => {

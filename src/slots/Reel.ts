@@ -116,6 +116,7 @@ export class Reel {
     }
 
     public startSpin(): void {
+        console.log('Reel startSpin called');
         this.isSpinning = true;
         this.speed = SPIN_SPEED;
         this.events.emit(ReelSpinEvents.REEL_SPIN_STARTED);
