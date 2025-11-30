@@ -20,6 +20,7 @@ export class SlotMachine {
     private spinButton: PIXI.Sprite | null = null;
     private frameSpine: Spine | null = null;
     private winAnimation: Spine | null = null;
+    private spinSound: Howl | null = null;
     private readonly centre: PIXI.Point;
 
     constructor(app: PIXI.Application) {
@@ -93,7 +94,10 @@ export class SlotMachine {
         this.isSpinning = true;
 
         // Play spin sound
-        sound.play('Reel spin');
+        this.spinSound = sound.play('Reel spin');
+        this.spinSound.on('end', () => {
+            this.spinSound = null;
+        });
 
         // Disable spin button
         if (this.spinButton) {
@@ -129,15 +133,23 @@ export class SlotMachine {
 
     }
 
-    private stopSpin(): void {
+    private async stopSpin(): Promise<void> {
         for (let i = 0; i < this.reels.length; i++) {
             setTimeout(() => {
                 this.reels[i].stopSpin();
 
                 // If this is the last reel, check for wins and enable spin button
                 if (i === this.reels.length - 1) {
-                    setTimeout(() => {
-                        this.checkWin();
+                    setTimeout(async () => {
+                        if(this.spinSound) {
+                            this.spinSound.fade(1, 0, 500);
+                            this.spinSound.on('fade', () => {
+                                this.spinSound?.volume(1);
+                                this.spinSound?.stop();
+                                this.spinSound = null;
+                            });
+                        }
+                        await this.checkWin();
                         this.isSpinning = false;
 
                         if (this.spinButton) {
@@ -150,26 +162,32 @@ export class SlotMachine {
         }
     }
 
-    private checkWin(): void {
+    private async checkWin(): Promise<void> {
         // Simple win check - just for demonstration
         const randomWin = Math.random() < 0.3; // 30% chance of winning
 
         if (randomWin) {
-            sound.play('win');
-            console.log('Winner!');
-
-            if (this.winAnimation) {
-                // TODO: Play the win animation found in "big-boom-h" spine
-                
-                this.winAnimation.skeleton.setToSetupPose();
-                this.winAnimation.state.setAnimation(0, 'start', false);
-                this.winAnimation.visible = true;
-                this.winAnimation.addEventListener('complete', () => {
-                    this.winAnimation!.visible = false;
-                });
-            }
+        sound.play('win');
+        console.log('Winner!');
+            // TODO: Play the win animation found in "big-boom-h" spine
+            return new Promise((resolve) => {
+                if (this.winAnimation) {
+                    this.winAnimation.skeleton.setToSetupPose();
+                    this.winAnimation.state.setAnimation(0, 'start', false);
+                    this.winAnimation.visible = true;
+                    this.winAnimation.state.addListener({
+                        complete: () => {
+                            this.winAnimation!.visible = false;
+                            resolve();
+                        }
+                    });
+                } else {
+                    resolve();
+                }
+            });
         }
     }
+    
 
     public setSpinButton(button: PIXI.Sprite): void {
         this.spinButton = button;

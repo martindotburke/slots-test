@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { sound } from './sound';
+import { Howl } from 'howler';
 
 // Asset paths
 const IMAGES_PATH = 'assets/images/';
@@ -32,6 +33,7 @@ const SOUNDS = [
 
 const textureCache: Record<string, PIXI.Texture> = {};
 const spineCache: Record<string, any> = {};
+const audioCache: Record<string, Howl> = {};
 
 export class AssetLoader {
     constructor() {
@@ -78,13 +80,22 @@ export class AssetLoader {
 
     private async loadSounds(): Promise<void> {
         try {
-            SOUNDS.forEach(soundFile => {
-                sound.add(soundFile.split('.')[0], SOUNDS_PATH + soundFile);
+            const audioPromises: Promise<void>[] = [];
+            SOUNDS.forEach(async (name) => {
+                const alias = name.split('.')[0];
+                const url = SOUNDS_PATH + name;
+                audioPromises.push(sound.add(alias, url));
+                
             });
+            await Promise.all(audioPromises);
         } catch (error) {
             console.error('Error loading sounds:', error);
             throw error;
         }
+    }
+
+    public static getSound(name: string): Howl {
+        return audioCache[name];
     }
 
     public static getTexture(name: string): PIXI.Texture {
