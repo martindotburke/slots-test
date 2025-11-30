@@ -2,9 +2,6 @@ import * as PIXI from 'pixi.js';
 import { SlotMachine } from './slots/SlotMachine';
 import { AssetLoader } from './utils/AssetLoader';
 import { UI } from './ui/UI';
-import { gsap } from "gsap"; 
-import { PixiPlugin } from "gsap/PixiPlugin";
-gsap.registerPlugin(PixiPlugin);
 
 export class Game {
     private app: PIXI.Application;

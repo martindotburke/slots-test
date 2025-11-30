@@ -1,6 +1,14 @@
 import * as PIXI from 'pixi.js';
 import { AssetLoader } from '../utils/AssetLoader';
 import { gsap } from "gsap";
+import EventEmitter from 'eventemitter3';
+
+export enum ReelSpinEvents {
+    REEL_SPIN_COMPLETE = 'REEL_SPIN_COMPLETE',
+    REEL_SPIN_STARTED = 'REEL_SPIN_STARTED',
+    REEL_LANDED = 'REEL_LANDED',
+    SYMOBL_LANDED = 'SYMOBL_LANDED'
+}
 
 const SYMBOL_TEXTURES = [
     'symbol1.png',
@@ -15,6 +23,7 @@ const SLOWDOWN_RATE = 0.95; // Rate at which the reel slows down
 
 export class Reel {
     public container: PIXI.Container;
+    public events: EventEmitter<ReelSpinEvents> = new EventEmitter();
     private symbols: PIXI.Sprite[];
     private symbolSize: number;
     private symbolCount: number;
@@ -23,6 +32,7 @@ export class Reel {
     private isSpinning: boolean = false;
 
     constructor(symbolCount: number, symbolSize: number) {
+
         this.container = new PIXI.Container();
         this.symbols = [];
         this.symbolSize = symbolSize;
@@ -49,6 +59,8 @@ export class Reel {
     private createRandomSymbol(): PIXI.Sprite {
         // TODO:Create a sprite with random texture
         const sprite = new PIXI.Sprite(this.createRandomSymbolTexture());
+        sprite.width = this.symbolSize;
+        sprite.height = this.symbolSize;
         return sprite;
     }
 
@@ -82,24 +94,31 @@ export class Reel {
                 this.snapToGrid();
             }
         }
-
-       
     }
 
     private snapToGrid(): void {
         // TODO: Snap symbols to horizontal grid positions
+        this.events.emit(ReelSpinEvents.REEL_LANDED);
+        const bouncePromises: Promise<void>[] = [];
         this.symbols.forEach(symbol => {
-            const diff = (symbol.x + this.symbolSize) % this.symbolSize;
+            this.events.emit(ReelSpinEvents.SYMOBL_LANDED);
+            const offSet = (symbol.x + this.symbolSize) % this.symbolSize;
             
-            if (diff > 0) {
-                gsap.to(symbol, { x: symbol.x - diff, duration: 0.5 });
-            }
+            if (offSet > 0) {
+                bouncePromises.push(new Promise((resolve) => {
+                    gsap.to(symbol, { x: symbol.x - offSet, duration: 0.5 }).then(()=> resolve());
+                }));
+            };
+        });
+        Promise.all(bouncePromises).then(() => {
+            this.events.emit(ReelSpinEvents.REEL_SPIN_COMPLETE);    
         });
     }
 
     public startSpin(): void {
         this.isSpinning = true;
         this.speed = SPIN_SPEED;
+        this.events.emit(ReelSpinEvents.REEL_SPIN_STARTED);
     }
 
     public stopSpin(): void {
